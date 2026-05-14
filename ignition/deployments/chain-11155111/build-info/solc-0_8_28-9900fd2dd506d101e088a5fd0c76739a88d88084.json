@@ -1,0 +1,42 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_28-9900fd2dd506d101e088a5fd0c76739a88d88084",
+  "solcVersion": "0.8.28",
+  "solcLongVersion": "0.8.28+commit.7893614a",
+  "compilerType": "solc",
+  "userSourceNameMap": {
+    "contracts/WishlistV3.sol": "project/contracts/WishlistV3.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "cancun",
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/WishlistV3.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\ncontract WishlistV3 {\n    struct Goal {\n        string name;\n        uint256 targetAmount;\n        uint256 currentAmount;\n        uint256 dreamPower;\n\n        bool isFulfilled;\n        uint256 createdAt;\n    }\n\n    mapping (address => Goal[]) public goals;\n    uint256 public totalDreamPower;\n\n    event DreamPowerIncreased(\n        address indexed owner,\n        uint256 indexed goalIndex,\n        uint256 addedPower,\n        uint256 newTotalPower\n    );\n\n    function addGoal(string memory _name, uint256 _targetAmount)  public {\n        goals[msg.sender].push(Goal({\n            name: _name,\n            targetAmount: _targetAmount,\n            currentAmount: 0,\n            dreamPower: 0,\n            isFulfilled: false,\n            createdAt: block.timestamp\n        }));\n    }\n\n    function getGoals(address _owner) public view returns (Goal[] memory) {\n        return goals[_owner];\n    }\n\n    function donate(address _owner, uint256 _goalIndex) external payable {\n        require(msg.value > 0, \"Send some ETH\");\n        require(_goalIndex < goals[_owner].length, \"Invalid goal\");\n\n        Goal storage goal = goals[_owner][_goalIndex];\n        require(!goal.isFulfilled, \"Goal already fulfilled\");\n\n        goal.currentAmount += msg.value;\n        goal.dreamPower += msg.value;\n        totalDreamPower += msg.value;\n\n        if(goal.currentAmount >= goal.targetAmount){ \n            goal.isFulfilled = true;\n        }\n\n        emit DreamPowerIncreased(_owner, _goalIndex, msg.value, totalDreamPower);\n    }\n}"
+      }
+    }
+  }
+}
