@@ -7,7 +7,7 @@ const geist = Geist({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'WishList Chain',
-  description: 'Собирай донаты на свою мечту',
+  description: 'Receive donations for your wishes',
 };
 
 export default function RootLayout({
