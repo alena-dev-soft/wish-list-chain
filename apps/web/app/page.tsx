@@ -6,11 +6,22 @@ import { AddGoalForm } from '@/components/AddGoalForm';
 import { GoalList } from "@/components/GoalList";
 
 import { useAccount } from 'wagmi';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Home() {
   const { address } = useAccount();
   const [refresh, setRefresh] = useState(0);
+
+  useEffect(() => {
+    if (!address) return;
+    fetch('/api/sync-goals', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ walletAddress: address }),
+    }).then(r => r.json()).then(data => {
+      console.log('Synced goals:', data);
+    });
+  }, [address]);
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center gap-8">
