@@ -1,0 +1,1 @@
+ALTER TABLE "donations" ADD COLUMN "ai_comment" text;

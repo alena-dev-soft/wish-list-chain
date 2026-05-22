@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { users, goals, donations } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { decodeEventLog } from 'viem';
+import { decodeEventLog, formatEther } from 'viem';
+import Athropic from '@anthropic-ai/sdk';
+
+const anthropic = new Athropic({
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+});
 
 const DREAM_POWER_INCREASED_ABI = [{
   name: 'DreamPowerIncreased',
@@ -14,6 +19,21 @@ const DREAM_POWER_INCREASED_ABI = [{
     { name: 'newTotalPower', type: 'uint256', indexed: false },
   ],
 }] as const;
+
+async function generateAiComment(goalName: string, amount: string): Promise<string> {
+  const message = await anthropic.messages.create({
+    model: 'claude-sonnet-4-5', // Use the latest model available
+    max_tokens: 100,
+    messages: [{
+      role: 'user',
+      content: `Someone just donated ${formatEther(BigInt(amount))} ETH to a dream called "${goalName}". 
+      Write a short inspiring comment (1-2 sentences, max 100 chars) to encourage them. 
+      Be warm and enthusiastic.`,
+    }],
+  });
+
+  return (message.content[0] as { text: string }).text;
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -61,12 +81,16 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
+      const aiComment = await generateAiComment(goal.name, addedPower);
+      console.log('Generated AI comment:', aiComment);
+
       // Save donation
       await db.insert(donations).values({
         goalId: goal.id,
         donorAddress: log.transaction.from.address.toLowerCase(),
         amount: addedPower,
         txHash,
+        aiComment,
       }).onConflictDoNothing();
 
       // Update goal currentAmount

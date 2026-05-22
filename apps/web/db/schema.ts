@@ -25,6 +25,7 @@ export const donations = pgTable('donations', {
   donorAddress: text('donor_address').notNull(),
   amount: numeric('amount').notNull(),
   txHash: text('tx_hash').notNull().unique(),
+  aiComment: text('ai_comment'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
