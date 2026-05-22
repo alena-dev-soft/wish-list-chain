@@ -4,10 +4,13 @@ import { users, goals, donations } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { decodeEventLog, formatEther } from 'viem';
 import Athropic from '@anthropic-ai/sdk';
+import { Bot } from 'grammy';
 
 const anthropic = new Athropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
+
+const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN!);
 
 const DREAM_POWER_INCREASED_ABI = [{
   name: 'DreamPowerIncreased',
@@ -33,6 +36,16 @@ async function generateAiComment(goalName: string, amount: string): Promise<stri
   });
 
   return (message.content[0] as { text: string }).text;
+}
+
+async function sendTelegramNotification(goalName: string, amount: string, donorAddress: string, aiComment: string) {
+  const ethAmount = formatEther(BigInt(amount));
+  const shortAddress = `${donorAddress.slice(0, 6)}...${donorAddress.slice(-4)}`;
+
+  await bot.api.sendMessage(
+    process.env.TELEGRAM_CHAT_ID!,
+    `💜 New donation to "${goalName}"!\n\nAmount: ${ethAmount} ETH\nFrom: ${shortAddress}\n\n✨ ${aiComment}`
+  );
 }
 
 export async function POST(req: NextRequest) {
@@ -99,6 +112,13 @@ export async function POST(req: NextRequest) {
         .where(eq(goals.id, goal.id));
 
       console.log('Donation saved:', txHash);
+      
+      await sendTelegramNotification(
+        goal.name,
+        addedPower,
+        log.transaction.from.address,
+        aiComment,
+      );
 
     } catch (err) {
       console.error('Error processing log:', err);
